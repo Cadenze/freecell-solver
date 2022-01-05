@@ -2,6 +2,7 @@ package main.model;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -32,6 +33,18 @@ public class Board {
     }
 
     // TODO: constructor for user input
+
+    public List<Card> getCells() {
+        return cells;
+    }
+
+    public int[] getFoundations() {
+        return foundations;
+    }
+
+    public List<List<Card>> getCascades() {
+        return cascades;
+    }
 
     /**
      * Makes a deck in order that is fresh off the printing press.
@@ -121,9 +134,7 @@ public class Board {
         return foundation;
     }
 
-    /**
-     * Prints the board state in a human-readable way.
-     */
+    @Override
     public String toString() {
         List<String> cellsPrint = new ArrayList<>();
         for (Card c : cells) {
@@ -155,4 +166,22 @@ public class Board {
         }
         return output;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+
+        if (!(o instanceof Board)) {
+            return false;
+        }
+
+        Board b = (Board) o;
+        return new HashSet<>(cells).equals(new HashSet<>(b.getCells())) &&
+            foundations.equals(b.getFoundations()) &&
+            new HashSet<>(cascades).equals(new HashSet<>(b.getCascades()));
+    }
+
+    // TODO: override hashcode
 }
