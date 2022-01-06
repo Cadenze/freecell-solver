@@ -40,15 +40,22 @@ public class Board {
         deal(shuffle());
     }
 
-    // TODO: constructor for user input
-
     /**
      * Default constructor.
      * @param cells
      * @param foundations
      * @param cascades
+     * @throws DuplicateCardException
+     * @throws MissingCardException
      */
-    private Board(Card[] cells, int[] foundations, List<List<Card>> cascades) {
+    public Board(Card[] cells, int[] foundations, List<List<Card>> cascades) throws MissingCardException, DuplicateCardException {
+        this.cells = cells;
+        this.foundations = foundations;
+        this.cascades = cascades;
+        verify();
+    }
+
+    private Board(Card[] cells, int[] foundations, List<List<Card>> cascades, boolean bypass) {
         this.cells = cells;
         this.foundations = foundations;
         this.cascades = cascades;
@@ -65,7 +72,7 @@ public class Board {
             List<Card> cascade = new LinkedList<>();
             cs.add(cascade);
         }
-        return new Board(new Card[cellLimit], found, cs);
+        return new Board(new Card[cellLimit], found, cs, true);
     }
 
     public Card[] getCells() {
@@ -136,16 +143,17 @@ public class Board {
 
         List<Card> deck = makeDeck();
         
-        while (!(board.isEmpty() && deck.isEmpty())) {
-            if (deck.isEmpty()) {
-                throw new DuplicateCardException(board.get(0).toString());
-            }
-
+        while (!(board.isEmpty() || deck.isEmpty())) {
             if (board.remove(deck.get(0))) {
                 deck.remove(0);
             } else {
-                throw new MissingCardException(deck.get(0).toString());
+                throw new MissingCardException();
             }
+        }
+        if (deck.isEmpty() && !board.isEmpty()) {
+            throw new DuplicateCardException();
+        } else if (!deck.isEmpty() && board.isEmpty()) {
+            throw new MissingCardException();
         }
     }
 
@@ -270,7 +278,7 @@ public class Board {
     }
 
     public Board duplicate() {
-        return new Board(cells, foundations, cascades);
+        return new Board(cells, foundations, cascades, true);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package main.model;
 
+import main.exceptions.NotACardException;
 import main.model.enums.Suit;
 
 public class Card {
@@ -12,6 +13,35 @@ public class Card {
      * @param suit the four suits, Hearts, Clubs, Diamonds, & Spades
      */
     public Card(int number, Suit suit) {
+        this.number = number;
+        this.suit = suit;
+    }
+
+    public Card(String card) throws NotACardException {
+        if (card.length() != 2) {
+            throw new NotACardException();
+        }
+
+        int number;
+        Suit suit;
+        
+        switch(card.charAt(0)) {
+            case 'A': number = 1; break;
+            case 'T': number = 10; break;
+            case 'J': number = 11; break;
+            case 'Q': number = 12; break;
+            case 'K': number = 13; break;
+            default: number = Integer.parseInt(card.substring(0, 1));
+        }
+        
+        switch(card.charAt(1)) {
+            case 'H': suit = Suit.HEARTS; break;
+            case 'C': suit = Suit.CLUBS; break;
+            case 'D': suit = Suit.DIAMONDS; break;
+            case 'S': suit = Suit.SPADES; break;
+            default: throw new NotACardException();
+        }
+
         this.number = number;
         this.suit = suit;
     }
