@@ -112,11 +112,11 @@ public class Board {
      * @param deck shuffled deck of 52 cards
      */
     public void deal(List<Card> deck) {
+        int counter = 0;
         while (!deck.isEmpty()) {
-            for (int i = 0; i < cascadeLimit; i++) {
-                cascades.get(i).add(deck.get(0));
-                deck.remove(0);
-            }
+            cascades.get(counter).add(deck.remove(0));
+            counter++;
+            counter %= cascadeLimit;
         }
     }
 
@@ -177,7 +177,7 @@ public class Board {
     public void move(String move) throws InvalidMoveException, IllegalMoveException {
         String[] moves = decodeMove(move.toUpperCase());
         Card toMove;
-        if (moves[0].matches("A-D")) {
+        if (isAlpha(moves[0])) {
             Card temp = cells[alphanumeric(moves[0])];
             if (temp == null) {
                 throw new IllegalMoveException();
@@ -193,7 +193,7 @@ public class Board {
             }
         }
 
-        if (moves[1].matches("A-D")) {
+        if (isAlpha(moves[1])) {
             if (cells[alphanumeric(moves[1])] == null) {
                 remove(moves[0]);
                 add(moves[1], toMove);
@@ -226,7 +226,7 @@ public class Board {
     }
 
     private void remove(String loci) throws InvalidMoveException {
-        if (loci.matches("A-D")) {
+        if (isAlpha(loci)) {
             cells[alphanumeric(loci)] = null;
         } else {
             List<Card> list = cascades.get(Integer.parseInt(loci) - 1);
@@ -235,7 +235,7 @@ public class Board {
     }
 
     private void add(String loci, Card card) throws InvalidMoveException {
-        if (loci.matches("A-D")) {
+        if (isAlpha(loci)) {
             cells[alphanumeric(loci)] = card;
         } else {
             cascades.get(Integer.parseInt(loci) - 1).add(card);
@@ -256,12 +256,21 @@ public class Board {
         }
     }
 
+    private static boolean isAlpha(String position) {
+        return position.equals("A") || position.equals("B") ||
+            position.equals("C") || position.equals("D");
+    }
+
     private static int alphanumeric(String position) throws InvalidMoveException {
         if (position.length() != 1) {
             throw new InvalidMoveException();
         }
         char pos = position.toCharArray()[0];
         return (int) pos - 65;
+    }
+
+    public Board duplicate() {
+        return new Board(cells, foundations, cascades);
     }
 
     @Override
@@ -300,7 +309,7 @@ public class Board {
         output += "Cells:       " + String.join(" ", cellsPrint) + "\n";
         output += "Foundations: " + String.join(" ", foundationsPrint);
         for (int i = 0; i < cascadeLimit; i++) {
-            output += "\n" + i + " " + String.join(" ", cascadesPrint.get(i));
+            output += "\n" + (i+1) + " " + String.join(" ", cascadesPrint.get(i));
         }
         return output;
     }

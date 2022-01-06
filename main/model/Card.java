@@ -48,6 +48,7 @@ public class Card {
         String output;
         switch (number) {
             case 1: output = "A"; break;
+            case 10: output = "T"; break;
             case 11: output = "J"; break;
             case 12: output = "Q"; break;
             case 13: output = "K"; break;
