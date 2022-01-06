@@ -1,28 +1,36 @@
 package main.model;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 
 import main.exceptions.DuplicateCardException;
+import main.exceptions.IllegalMoveException;
+import main.exceptions.InvalidMoveException;
 import main.exceptions.MissingCardException;
 import main.model.enums.Suit;
 
 public class Board {
-    private List<Card> cells;
+    private Card[] cells;
     private int[] foundations;
     private List<List<Card>> cascades;
 
-    private final int cellLimit = 4;
-    private final int cascadeLimit = 8;
+    private static final int cellLimit = 4;
+    private static final int cascadeLimit = 8;
+
+    public static final Board FINISHED = finishedBoard();
+
+    public static final String allowedFrom = "ABCD12345678";
+    public static final String allowedTo = "ABCD12345678F";
 
     /**
      * Constructs a new FreeCell board with shuffled deck.
      */
     public Board() {
-        cells = new LinkedList<>();
+        cells = new Card[cellLimit];
         foundations = new int[4];
         cascades = new LinkedList<>();
         for (int i = 0; i < cascadeLimit; i++) { // initializes 8 empty cascades
@@ -34,7 +42,33 @@ public class Board {
 
     // TODO: constructor for user input
 
-    public List<Card> getCells() {
+    /**
+     * Default constructor.
+     * @param cells
+     * @param foundations
+     * @param cascades
+     */
+    private Board(Card[] cells, int[] foundations, List<List<Card>> cascades) {
+        this.cells = cells;
+        this.foundations = foundations;
+        this.cascades = cascades;
+    }
+
+    /**
+     * Makes a finished board.
+     * @return all 52 cards in foundation
+     */
+    private static Board finishedBoard() {
+        int[] found = {13, 13, 13, 13};
+        List<List<Card>> cs = new LinkedList<>();
+        for (int i = 0; i < cascadeLimit; i++) { // initializes 8 empty cascades
+            List<Card> cascade = new LinkedList<>();
+            cs.add(cascade);
+        }
+        return new Board(new Card[cellLimit], found, cs);
+    }
+
+    public Card[] getCells() {
         return cells;
     }
 
@@ -94,7 +128,7 @@ public class Board {
      */
     public void verify() throws MissingCardException, DuplicateCardException {
         List<Card> board = new LinkedList<>(); // list of cards on board
-        board.addAll(cells);
+        board.addAll(Arrays.asList(cells));
         board.addAll(cardsInFoundation());
         for (int i = 0; i < cascadeLimit; i++) {
             board.addAll(cascades.get(i));
@@ -134,19 +168,123 @@ public class Board {
         return foundation;
     }
 
+    /**
+     * Moves a card on the board.
+     * @param move
+     * @throws InvalidMoveException
+     * @throws IllegalMoveException
+     */
+    public void move(String move) throws InvalidMoveException, IllegalMoveException {
+        String[] moves = decodeMove(move.toUpperCase());
+        Card toMove;
+        if (moves[0].matches("A-D")) {
+            Card temp = cells[alphanumeric(moves[0])];
+            if (temp == null) {
+                throw new IllegalMoveException();
+            } else {
+                toMove = temp;
+            }
+        } else {
+            List<Card> list = cascades.get(Integer.parseInt(moves[0]) - 1);
+            if (list.isEmpty()) {
+                throw new IllegalMoveException();
+            } else {
+                toMove = list.get(list.size() - 1);
+            }
+        }
+
+        if (moves[1].matches("A-D")) {
+            if (cells[alphanumeric(moves[1])] == null) {
+                remove(moves[0]);
+                add(moves[1], toMove);
+            } else {
+                throw new IllegalMoveException();
+            }
+        } else if (moves[1].equals("F")) {
+            int index = toMove.getSuit().getValue();
+            if (foundations[index] == toMove.getNumber() - 1) {
+                foundations[index]++;
+                remove(moves[0]);
+            } else {
+                throw new IllegalMoveException();
+            }
+        } else {
+            List<Card> list = cascades.get(Integer.parseInt(moves[1]) - 1);
+            if (list.isEmpty()) {
+                remove(moves[0]);
+                add(moves[1], toMove);
+            } else {
+                Card temp = list.get(list.size() - 1);
+                if (temp.getNumber() == toMove.getNumber() + 1 && temp.getSuit().getColour() != toMove.getSuit().getColour()) {
+                    remove(moves[0]);
+                    add(moves[1], toMove);
+                } else {
+                    throw new IllegalMoveException();
+                }
+            }
+        }
+    }
+
+    private void remove(String loci) throws InvalidMoveException {
+        if (loci.matches("A-D")) {
+            cells[alphanumeric(loci)] = null;
+        } else {
+            List<Card> list = cascades.get(Integer.parseInt(loci) - 1);
+            list.remove(list.size() - 1);
+        }
+    }
+
+    private void add(String loci, Card card) throws InvalidMoveException {
+        if (loci.matches("A-D")) {
+            cells[alphanumeric(loci)] = card;
+        } else {
+            cascades.get(Integer.parseInt(loci) - 1).add(card);
+        }
+    }
+
+    private String[] decodeMove(String move) throws InvalidMoveException {
+        if (move.length() != 2) {
+            throw new InvalidMoveException();
+        }
+
+        String from = move.substring(0, 1);
+        String to = move.substring(1);
+        if (allowedFrom.contains(from) && allowedTo.contains(to)) {
+            return new String[]{from, to};
+        } else {
+            throw new InvalidMoveException();
+        }
+    }
+
+    private static int alphanumeric(String position) throws InvalidMoveException {
+        if (position.length() != 1) {
+            throw new InvalidMoveException();
+        }
+        char pos = position.toCharArray()[0];
+        return (int) pos - 65;
+    }
+
     @Override
     public String toString() {
         List<String> cellsPrint = new ArrayList<>();
         for (Card c : cells) {
-            cellsPrint.add(c.toString());
+            if (c == null) {
+                cellsPrint.add("--");
+            } else {
+                cellsPrint.add(c.toString());
+            }
         }
 
         List<String> foundationsPrint = new ArrayList<>();
         Suit[] suits = Suit.values();
         assert suits.length == foundations.length;
         for (int i = 0; i < suits.length; i++) {
-            String card = foundations[i] + suits[i].toString();
-            foundationsPrint.add(card);
+            if (foundations[i] == 0) {
+                foundationsPrint.add("--");
+            } else {
+                String card = foundations[i] + suits[i].toString();
+                foundationsPrint.add(card);
+            }
         }
 
         List<List<String>> cascadesPrint = new LinkedList<>();
@@ -178,7 +316,7 @@ public class Board {
         }
 
         Board b = (Board) o;
-        return new HashSet<>(cells).equals(new HashSet<>(b.getCells())) &&
+        return new HashSet<>(Arrays.asList(cells)).equals(new HashSet<>(Arrays.asList(b.getCells()))) &&
             foundations.equals(b.getFoundations()) &&
             new HashSet<>(cascades).equals(new HashSet<>(b.getCascades()));
     }
