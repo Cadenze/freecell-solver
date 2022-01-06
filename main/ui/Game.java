@@ -1,4 +1,4 @@
-package main.model;
+package main.ui;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -6,6 +6,7 @@ import java.util.Scanner;
 
 import main.exceptions.IllegalMoveException;
 import main.exceptions.InvalidMoveException;
+import main.model.Board;
 
 public class Game {
     private Board current;
